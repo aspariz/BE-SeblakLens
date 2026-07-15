@@ -1,4 +1,4 @@
-﻿absl-py==2.3.1
+absl-py==2.3.1
 annotated-types==0.7.0
 asttokens==3.0.0
 astunparse==1.6.3
@@ -123,3 +123,4 @@ Werkzeug==3.1.8
 wrapt==2.2.2
 zope.event==6.2
 zope.interface==8.5
+werkzeug
