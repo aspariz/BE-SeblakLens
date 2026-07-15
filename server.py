@@ -3,6 +3,8 @@ from flask_cors import CORS
 import google.generativeai as genai
 import os
 import tempfile
+import base64
+import json
 from dotenv import load_dotenv
 
 # 1. Mengambil kunci rahasia dari file .env
@@ -17,27 +19,30 @@ CORS(app)
 # 3. Memilih otak Gemini
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-# 4. Daftar Harga Toping (Silakan ubah sesuai harga aslimu)
+# 4. Daftar Harga Toping (Semua kunci diubah menjadi huruf kecil agar aman)
 HARGA = {
     "jamur enoki": 2000, "fishroll": 2500, "dumpling ayam": 3000,
     "cuanki": 1500, "chikuwa long": 2500, "batagor": 2000,
-    "bakso": 2000, "kerupuk": 1000, "Telor": 2000, "sosis": 2000, "kwetiau": 3000, "mie": 2000, "tahu": 1500, "macaroni": 2000, "sayur": 1500
+    "bakso": 2000, "kerupuk": 1000, "telor": 2000, "sosis": 2000, 
+    "kwetiau": 3000, "mie": 2000, "tahu": 1500, "macaroni": 2000, "sayur": 1500
 }
 
 # 5. Jalur utama untuk menerima gambar dari web
 @app.route('/hitung-seblak', methods=['POST'])
 def hitung():
     data = request.json
-    gambar_b64 = data['gambar'].split(",")[1]
     
-    import base64
-    gambar_bytes = base64.b64decode(gambar_b64)
-    
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
-        temp_file.write(gambar_bytes)
-        temp_path = temp_file.name
-
+    if not data or 'gambar' not in data:
+        return jsonify({"status": "error", "pesan": "Data gambar tidak ditemukan"}), 400
+        
     try:
+        gambar_b64 = data['gambar'].split(",")[1]
+        gambar_bytes = base64.b64decode(gambar_b64)
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
+            temp_file.write(gambar_bytes)
+            temp_path = temp_file.name
+            
         sample_file = genai.upload_file(path=temp_path)
         
         # PROMPT: Titipan pesan untuk Gemini
@@ -70,9 +75,9 @@ def hitung():
         """
         
         response = model.generate_content([sample_file, prompt])
-        hasil_teks = response.text.replace('```json', '').replace('```', '').strip()
         
-        import json
+        # Bersihkan markdown jika Gemini tidak sengaja menyertakannya
+        hasil_teks = response.text.replace('```json', '').replace('```', '').strip()
         data_toping = json.loads(hasil_teks)
         
         keranjang = []
@@ -80,13 +85,14 @@ def hitung():
         
         # 6. Menghitung harga total
         for item in data_toping:
-            nama = item['nama'].lower()
+            nama = item['nama'].lower().strip()
             jumlah = item['jumlah']
-            harga_satuan = HARGA.get(nama, 0)
-            subtotal = harga_satuan * jumlah
-            total_harga += subtotal
             
             if jumlah > 0:
+                harga_satuan = HARGA.get(nama, 0)
+                subtotal = harga_satuan * jumlah
+                total_harga += subtotal
+                
                 keranjang.append({
                     "nama": nama,
                     "jumlah": jumlah,
@@ -101,11 +107,13 @@ def hitung():
         })
 
     except Exception as e:
-        return jsonify({"status": "error", "pesan": str(e)})
+        return jsonify({"status": "error", "pesan": str(e)}), 500
     finally:
-        os.remove(temp_path)
+        # Memastikan file temporary terhapus dari server agar storage tidak penuh
+        if 'temp_path' in locals() and os.path.exists(temp_path):
+            os.remove(temp_path)
 
-# 7. Menyalakan Server
+# 7. Menyalakan Server (Sudah dibersihkan dari kode duplikat)
 if __name__ == '__main__':
-    print("Server Kasir AI menyala! Berjalan di http://127.0.0.1:5000")
-    app.run(port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
