@@ -6,7 +6,7 @@ Werkzeug==3.1.8
 
 # AI & Utilities (Pilih salah satu atau keduanya sesuai kebutuhan)
 google-generativeai==0.8.6
-tflite-runtime==2.14.0
+
 
 # Data handling ringan
 numpy==1.26.4
