@@ -28,8 +28,13 @@ HARGA = {
 }
 
 # 5. Jalur utama untuk menerima gambar dari web
-@app.route('/hitung-seblak', methods=['POST'])
+# 5. Jalur utama untuk menerima gambar dari web
+@app.route('/hitung-seblak', methods=['POST', 'OPTIONS'])
 def hitung():
+    # Tangkap preflight request dari browser/Vercel
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "sukses"}), 200
+        
     data = request.json
     
     if not data or 'gambar' not in data:
@@ -114,6 +119,10 @@ def hitung():
             os.remove(temp_path)
 
 # 7. Menyalakan Server (Sudah dibersihkan dari kode duplikat)
-# if __name__ == '__main__':
-#     port = int(os.environ.get("PORT", 5000))
-#     app.run(host='0.0.0.0', port=port)
+# 2. Mengaktifkan server Flask
+app = Flask(__name__)
+CORS(app, resources={r"/*": {
+    "origins": "https://seblak-lens-86z6.vercel.app",
+    "methods": ["GET", "POST", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization"]
+}})
