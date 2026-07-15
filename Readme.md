@@ -1,10 +1,8 @@
 ---
-title: Seblak Backend
+title: BE SeblakLens
 emoji: 🍜
 colorFrom: red
 colorTo: yellow
-sdk: static
+sdk: gradio
 pinned: false
 ---
-
-Backend server untuk Aplikasi Kasir Seblak AI.
